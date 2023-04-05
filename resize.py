@@ -1,11 +1,12 @@
 from PIL import Image
 import os
 
-def resize_image(image):
+def resize_image(image, new_width):
     width, height = image.size
-    new_width = int(width//2)
-    new_height = int(height//2)
+    aspect_ratio = float(width) / float(height)
+    new_height = int(new_width / aspect_ratio)
     return image.resize((new_width, new_height), Image.ANTIALIAS)
+
 
 def main():
     periods = [1300 + i*25 for i in range(0, 11)]
@@ -15,7 +16,8 @@ def main():
         for filename in os.listdir(folder):
             if filename.endswith('.ppm'):
                 image = Image.open(f'{folder}/{filename}')
-                image = resize_image(image)
+                width, _ = image.size
+                image = resize_image(image, width//3)
                 save_folder = f'resized/{period}'
                 if not os.path.exists(save_folder):
                     os.makedirs(save_folder)

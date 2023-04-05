@@ -240,7 +240,7 @@ def stroke_length(binary_image, key_point, sin_theta, cos_theta, max_distance=10
     return 0
 
 
-def psd_feature_vector(binary_image, key_point, num_directions=120):
+def psd_feature_vector(binary_image, key_point, num_directions=72):
     stroke_lengths = np.zeros(num_directions)
 
     sin_values = np.sin(2 * np.pi * np.arange(num_directions) / num_directions)
@@ -336,7 +336,7 @@ def get_psd(binary_image):
     skeleton = skeletonize(invert(binary_image))
     keypoints = get_keypoints(skeleton)
     keypoints_count = len(keypoints)
-    num_directions = 120  # This should match the value you used in the `psd_feature_vector` function
+    num_directions = 72  # This should match the value you used in the `psd_feature_vector` function
     feature_vectors = np.zeros((keypoints_count, num_directions))
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(compute_feature_vector, [(binary_image, keypoint) for keypoint in keypoints]))
