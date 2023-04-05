@@ -317,11 +317,8 @@ def get_keypoints(skeleton):
     fragments = extract_fragments(skeleton, labels)
     e = 7
     # find the time before the function call
-    start = time.time()
     high_curvature_points = extract_angles_minima(skeleton, fragments, e)
     # find the time after the function call
-    end = time.time()
-    print(f"Time taken by function: {end - start}")
     keypoints = np.concatenate((forkpoints, np.array(high_curvature_points)))
     return keypoints
 
@@ -332,14 +329,12 @@ def compute_feature_vector(args):
 
 
 def get_psd(binary_image):
-    print('image')
     skeleton = skeletonize(invert(binary_image))
     keypoints = get_keypoints(skeleton)
     keypoints_count = len(keypoints)
     num_directions = 72  # This should match the value you used in the `psd_feature_vector` function
     feature_vectors = np.zeros((keypoints_count, num_directions))
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        results = list(executor.map(compute_feature_vector, [(binary_image, keypoint) for keypoint in keypoints]))
+    results = [compute_feature_vector((binary_image, keypoint)) for keypoint in keypoints]
 
     for idx, result in enumerate(results):
         feature_vectors[idx] = result
