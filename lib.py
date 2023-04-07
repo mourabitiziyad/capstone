@@ -285,7 +285,7 @@ def display_image(image):
 def load_image_binarize(image_path):
     """loads an image from a given path"""
     # Load the image
-    image = io.imread(image_path)
+    image = io.imread(image_path, as_gray=True)
     # image = color.rgb2gray(image)
     # Apply Sauvola thresholding
     window_size = 25
@@ -301,10 +301,9 @@ def get_forkpoints(skeleton):
     for i in range(skeleton.shape[0]):
         for j in range(skeleton.shape[1]):
             # if the cell of skeleton is an array of 0s, it is a background pixel and we can skip it
-            if np.all(skeleton[i, j]) == 0:
-                skeleton[i, j] = False
-                continue
-            print(skeleton[i,j])
+            # if np.all(skeleton[i, j]) == 0:
+            #     skeleton[i, j] = False
+            #     continue
             if skeleton[i, j] == True and len(get_adjacent_pixels(skeleton, (i, j))) >= 3:
                 forkpoints.append(np.array([i, j]))
     return np.array(forkpoints)
@@ -344,4 +343,5 @@ def get_psd(binary_image):
 
     for idx, result in enumerate(results):
         feature_vectors[idx] = result
+    print('image done')
     return feature_vectors

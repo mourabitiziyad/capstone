@@ -27,6 +27,7 @@ periods = [1300 + index * 25 for index in range(1)]
 def process_period_images(period):
     starttime = time.time()
     image_paths = np.load(f'train/paths/{period}.npy', allow_pickle=True)
+    print(image_paths)
     print(f'Loaded {len(image_paths)} images for period {period}')
     print(f'Loading images for period {period}...')
     binary_images = np.array(list(map(load_image_binarize, image_paths)), dtype=object)
@@ -37,4 +38,5 @@ def process_period_images(period):
 
 
 process_period_images(periods[0])
-    # executor.map(process_period_images, periods)
+# with ThreadPoolExecutor() as executor:
+#     executor.map(process_period_images, periods)
