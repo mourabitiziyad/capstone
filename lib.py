@@ -10,6 +10,7 @@ from skimage import measure
 from skimage import img_as_ubyte
 import concurrent.futures
 import os
+from joblib import Parallel, delayed
 import cv2
 e = 7
 min_frag_size = 2*e+2
@@ -262,12 +263,14 @@ def psd_feature_vector(binary_image, key_point, num_directions=72):
 def get_images(period, folder):
 
     """returns a list of image paths for a given period"""
-    folder_size = len(os.listdir(f'resized/{folder}'))
+    folder_size = len(os.listdir(f'dev_images/1300'))
+    print(folder_size)
     # create an array to hold each path along with its label(period)
     image_paths = np.zeros((folder_size, 2), dtype=object)
     index = 0
-    for file in os.listdir(f'resized/{folder}'):
-        image_paths[index, 0] = f'resized/{folder}/{file}'
+    for file in os.listdir(f'dev_images/1300'):
+        print(file)
+        image_paths[index, 0] = f'dev_images/1300/{file}'
         image_paths[index, 1] = period
         index += 1
     return image_paths
@@ -283,7 +286,7 @@ def load_image_binarize(image_path):
     """loads an image from a given path"""
     # Load the image
     image = io.imread(image_path)
-    image = color.rgb2gray(image)
+    # image = color.rgb2gray(image)
     # Apply Sauvola thresholding
     window_size = 25
     thresh_sauvola = threshold_sauvola(image, window_size=window_size)
@@ -292,21 +295,19 @@ def load_image_binarize(image_path):
 
 
 def get_forkpoints(skeleton):
-    selems = list()
-    selems.append(np.array([[0, 1, 0], [1, 1, 1], [0, 0, 0]]))
-    selems.append(np.array([[1, 0, 1], [0, 1, 0], [1, 0, 0]]))
-    selems.append(np.array([[1, 0, 1], [0, 1, 0], [0, 1, 0]]))
-    selems.append(np.array([[0, 1, 0], [1, 1, 0], [0, 0, 1]]))
-    selems.append(np.array([[0, 0, 1], [1, 1, 1], [0, 1, 0]]))
-    selems = [np.rot90(selems[i], k=j) for i in range(5) for j in range(4)]
-
-    selems.append(np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]]))
-    selems.append(np.array([[1, 0, 1], [0, 1, 0], [1, 0, 1]]))
-
-    forkpoints = np.zeros_like(skeleton, dtype=bool)
-    for selem in selems:
-        forkpoints |= ndi.binary_hit_or_miss(skeleton, selem)
-    return np.argwhere(forkpoints)
+    # loop through every point in the skeleton and check whether it has 3 or more neighbors
+    # if it does, it is a forkpoint
+    forkpoints = []
+    for i in range(skeleton.shape[0]):
+        for j in range(skeleton.shape[1]):
+            # if the cell of skeleton is an array of 0s, it is a background pixel and we can skip it
+            if np.all(skeleton[i, j]) == 0:
+                skeleton[i, j] = False
+                continue
+            print(skeleton[i,j])
+            if skeleton[i, j] == True and len(get_adjacent_pixels(skeleton, (i, j))) >= 3:
+                forkpoints.append(np.array([i, j]))
+    return np.array(forkpoints)
 
 
 
@@ -329,12 +330,17 @@ def compute_feature_vector(args):
 
 
 def get_psd(binary_image):
+    print(binary_image.shape, binary_image.dtype)
     skeleton = skeletonize(invert(binary_image))
     keypoints = get_keypoints(skeleton)
     keypoints_count = len(keypoints)
     num_directions = 72  # This should match the value you used in the `psd_feature_vector` function
     feature_vectors = np.zeros((keypoints_count, num_directions))
-    results = [compute_feature_vector((binary_image, keypoint)) for keypoint in keypoints]
+
+    # faster way of doing the code below
+    # results = [compute_feature_vector((binary_image, keypoint)) for keypoint in keypoints]
+
+    results = Parallel(n_jobs=-1)(delayed(compute_feature_vector)((binary_image, keypoint)) for keypoint in keypoints)
 
     for idx, result in enumerate(results):
         feature_vectors[idx] = result
